@@ -32,6 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
 </head>
 <body>
     <!-- Background particles -->
@@ -201,7 +202,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 PixelVault. Developed with ❤️ by <a href="https://sh4lu-z.vercel.app/" target="_blank"><span style="white-space: nowrap;">Shaluka Gimhan</span></a></p>
+                <p>&copy; 2026 PixelVault. Developed with by <a href="https://sh4lu-z.vercel.app/" target="_blank"><span style="white-space: nowrap;">Shaluka Gimhan</span></a></p>
             </div>
         </footer>
     </div>
@@ -359,6 +360,31 @@
 
     <!-- Toast notification -->
     <div class="toast" id="toast"></div>
+
+
+    
+    <div id="pwa-install-banner" class="pwa-banner">
+        <div class="pwa-content">
+            <div class="pwa-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="2" width="9" height="9" rx="2" fill="#0070f3" opacity="0.9"/>
+                    <rect x="13" y="2" width="9" height="9" rx="2" fill="#0070f3" opacity="0.6"/>
+                    <rect x="2" y="13" width="9" height="9" rx="2" fill="#0070f3" opacity="0.6"/>
+                    <rect x="13" y="13" width="9" height="9" rx="2" fill="#0070f3" opacity="0.9"/>
+                </svg>
+            </div>
+            <div class="pwa-text">
+                <h4>PixelVault App</h4>
+                <p>Download our app for faster access.</p>
+            </div>
+        </div>
+        <div class="pwa-actions">
+            <button id="pwa-install-btn" class="pwa-btn-primary">Download</button>
+            <button id="pwa-close-btn" class="pwa-btn-secondary" aria-label="Close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>

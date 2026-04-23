@@ -1,3 +1,16 @@
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => console.log('SW Registered!', registration.scope))
+      .catch(err => console.log('SW Registration Failed!', err));
+  });
+}
+
+
+
+
+
+
 let currentPhotos = [];
 let currentIndex = -1;
 let currentPage = 1;
@@ -368,3 +381,50 @@ function showToast(msg) {
     toast.classList.add('active');
     setTimeout(() => toast.classList.remove('active'), 3000);
 }
+
+
+
+
+
+let deferredPrompt;
+const pwaBanner = document.getElementById('pwa-install-banner');
+const installBtn = document.getElementById('pwa-install-btn');
+const closeBtn = document.getElementById('pwa-close-btn');
+
+// 1. Browser එකෙන් ඇප් එක ඉන්ස්ටෝල් කරන්න පුළුවන් කියලා කියද්දී මේක වැඩ කරනවා
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Default popup එක එන එක නවත්තනවා
+    e.preventDefault();
+    
+    // Event එක save කරගන්නවා පස්සේ බට්න් එක එබුවම පාවිච්චි කරන්න
+    deferredPrompt = e;
+    
+    // යූසර් සයිට් එකට ඇවිත් තත්පර 2කට පස්සේ බැනර් එක උඩට එන්න හදනවා 
+    // (එකපාරටම එනවට වඩා මේක Professional)
+    setTimeout(() => {
+        pwaBanner.classList.add('show');
+    }, 2000);
+});
+
+// 2. Download බට්න් එක එබුවම
+installBtn.addEventListener('click', async () => {
+    // අපේ බැනර් එක හංගනවා
+    pwaBanner.classList.remove('show');
+    
+    if (deferredPrompt) {
+        // ඔරිජිනල් Install popup එක පෙන්නනවා
+        deferredPrompt.prompt();
+        
+        // යූසර් Install කරාද නැද්ද කියලා බලනවා
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        
+        // ආයේ පාවිච්චි කරන්න බැරි වෙන්න එක Clear කරනවා
+        deferredPrompt = null;
+    }
+});
+
+// 3. Close (X) බට්න් එක එබුවම බැනර් එක අයින් කරනවා
+closeBtn.addEventListener('click', () => {
+    pwaBanner.classList.remove('show');
+});
