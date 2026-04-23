@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PixelVault — Premium Photo Gallery by Shaluka Gimhan</title>
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Explore, search, and download thousands of stunning wallpapers and photos. PixelVault is a premium gallery powered by Unsplash and Shaluka Gimhan." />
+    <meta name="keywords" content="wallpapers, premium photos, pixelvault, shaluka gimhan, unsplash gallery, 4k wallpapers" />
+    <meta name="author" content="Shaluka Gimhan" />
+    <meta name="theme-color" content="#007bff" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sh4lu-z.vercel.app/" />
+    <meta property="og:title" content="PixelVault — Premium Photo Gallery" />
+    <meta property="og:description" content="Explore and download stunning high-quality wallpapers curated by Shaluka Gimhan." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=1200" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://sh4lu-z.vercel.app/" />
+    <meta property="twitter:title" content="PixelVault — Premium Photo Gallery" />
+    <meta property="twitter:description" content="Explore and download stunning high-quality wallpapers curated by Shaluka Gimhan." />
+    <meta property="twitter:image" content="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=1200" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><rect x='2' y='2' width='9' height='9' rx='2' fill='%23007bff' opacity='0.9'/><rect x='13' y='2' width='9' height='9' rx='2' fill='%23007bff' opacity='0.6'/><rect x='2' y='13' width='9' height='9' rx='2' fill='%23007bff' opacity='0.6'/><rect x='13' y='13' width='9' height='9' rx='2' fill='%23007bff' opacity='0.9'/></svg>" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <!-- Background particles -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <!-- ======= NAVBAR ======= -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-inner">
+            <div class="nav-logo" id="navLogo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="2" width="9" height="9" rx="2" fill="currentColor" opacity="0.9"/>
+                        <rect x="13" y="2" width="9" height="9" rx="2" fill="currentColor" opacity="0.6"/>
+                        <rect x="2" y="13" width="9" height="9" rx="2" fill="currentColor" opacity="0.6"/>
+                        <rect x="13" y="13" width="9" height="9" rx="2" fill="currentColor" opacity="0.9"/>
+                    </svg>
+                </div>
+                <span>PixelVault</span>
+            </div>
+
+            <div class="nav-stats" id="navStats">
+                <div class="stat-badge" id="totalPhotosLabel">Loading...</div>
+            </div>
+
+            <div class="nav-actions">
+                <button class="nav-btn" id="homeBtn" onclick="showPage('home')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+                    Home
+                </button>
+                <button class="nav-btn" id="exploreBtn" onclick="showPage('explore')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    Explore
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ======= HOME PAGE ======= -->
+    <div class="page active" id="page-home">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-dot"></span>
+                    Live Search — Powered by Unsplash
+                </div>
+                <h1 class="hero-title">
+                    Discover <span class="gradient-text">Stunning</span><br/>Wallpapers
+                </h1>
+                <p class="hero-subtitle">Search through thousands of curated photos. What you don't find locally, we fetch live and save for next time.</p>
+
+                <!-- Search Bar -->
+                <div class="search-wrapper" id="heroSearchWrapper">
+                    <div class="search-bar" id="heroSearchBar">
+                        <div class="search-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="heroSearch"
+                            placeholder="Search dark, cars, neon, nature, space..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        />
+                        <div class="search-actions">
+                            <button class="live-toggle" id="liveToggle" title="Fetch live from Unsplash">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                Live
+                            </button>
+                            <button class="search-btn" id="heroSearchBtn" onclick="doSearch()">
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                    <div class="search-suggestions" id="searchSuggestions"></div>
+                </div>
+
+                <div class="quick-tags" id="quickTags">
+                    <span class="tag-label">Popular:</span>
+                    <!-- filled by JS -->
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="hero-grid" id="heroGrid">
+                    <!-- filled by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Categories Section -->
+        <section class="categories-section" id="categoriesSection">
+            <div class="section-header">
+                <h2 class="section-title">Browse Categories</h2>
+                <p class="section-sub">Hand-curated collections ready to explore</p>
+            </div>
+            <div class="categories-grid" id="categoriesGrid">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about-section" id="about">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2 class="section-title">About PixelVault</h2>
+                    <p>PixelVault is a high-performance, premium photo gallery designed for creators. We bridge the gap between local collections and the vast world of Unsplash, ensuring you always find the perfect shot. What's unique? Every time you search for something new, we fetch it live and save it into our core library for everyone to enjoy.</p>
+                    <div class="about-features">
+                        <div class="feature">
+                            <span class="feature-icon">⚡</span>
+                            <div>
+                                <h4>Instant Delivery</h4>
+                                <p>Optimized image delivery with smart pre-loading.</p>
+                            </div>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">🔍</span>
+                            <div>
+                                <h4>Live Sync</h4>
+                                <p>Real-time fetching from Unsplash API.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-visual">
+                    <div class="visual-card">
+                        <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=600" alt="About Visual">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <div class="nav-logo">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2" y="2" width="9" height="9" rx="2" fill="currentColor" opacity="0.9"/>
+                                <rect x="13" y="2" width="9" height="9" rx="2" fill="currentColor" opacity="0.6"/>
+                                <rect x="2" y="13" width="9" height="9" rx="2" fill="currentColor" opacity="0.6"/>
+                                <rect x="13" y="13" width="9" height="9" rx="2" fill="currentColor" opacity="0.9"/>
+                            </svg>
+                        </div>
+                        <span>PixelVault</span>
+                    </div>
+                    <p>Premium wallpaper collection by Shaluka Gimhan.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h4>Explore</h4>
+                        <a href="#" onclick="showPage('home')">Home</a>
+                        <a href="#" onclick="showPage('explore')">Search</a>
+                        <a href="#about">About</a>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Social</h4>
+                        <a href="https://sh4lu-z.vercel.app/" target="_blank">Portfolio</a>
+                        <a href="https://sh4lu-z.vercel.app/" target="_blank">Instagram</a>
+                        <a href="https://sh4lu-z.vercel.app/" target="_blank">Twitter</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 PixelVault. Developed with ❤️ by <a href="https://sh4lu-z.vercel.app/" target="_blank">Shaluka Gimhan</a></p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ======= EXPLORE / RESULTS PAGE ======= -->
+    <div class="page" id="page-explore">
+        <div class="explore-header">
+            <div class="explore-search">
+                <div class="search-bar mini">
+                    <div class="search-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    </div>
+                    <input type="text" id="exploreSearch" placeholder="Search photos..." autocomplete="off" />
+                    <div class="search-actions">
+                        <button class="live-toggle" id="exploreLiveToggle" title="Fetch live">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            Live
+                        </button>
+                        <button class="search-btn" onclick="doExploreSearch()">Go</button>
+                    </div>
+                </div>
+            </div>
+            <div class="explore-meta" id="exploreMeta"></div>
+        </div>
+
+        <div class="gallery-container">
+            <div class="loading-spinner" id="mainSpinner" style="display:none">
+                <div class="spinner"></div>
+                <p>Finding photos...</p>
+            </div>
+            <div class="masonry-grid" id="mainGrid"></div>
+            <div class="load-more-wrap" id="loadMoreWrap" style="display:none">
+                <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    Load More
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======= LIGHTBOX ======= -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose" onclick="closeLightbox()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <button class="lightbox-prev" id="lightboxPrev" onclick="navigateLightbox(-1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="lightbox-next" id="lightboxNext" onclick="navigateLightbox(1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <div class="lightbox-inner">
+            <div class="lightbox-img-wrap">
+                <img id="lightboxImg" src="" alt="" />
+                <div class="lightbox-loader" id="lightboxLoader">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            <div class="lightbox-info" id="lightboxInfo">
+                <div class="lb-photographer">
+                    <img class="lb-avatar" id="lbAvatar" src="" alt="" />
+                    <div>
+                        <div class="lb-name" id="lbName"></div>
+                        <div class="lb-username" id="lbUsername"></div>
+                    </div>
+                </div>
+                <div class="lb-description" id="lbDesc"></div>
+                <div class="lb-tags" id="lbTags"></div>
+                <div class="lb-meta">
+                    <span class="lb-meta-item" id="lbSize"></span>
+                    <span class="lb-meta-item" id="lbColor">
+                        <span class="color-dot" id="lbColorDot"></span>
+                    </span>
+                </div>
+                <div class="lb-downloads">
+                    <button class="download-btn" id="dlSmall" onclick="downloadPhoto('small')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Small
+                    </button>
+                    <button class="download-btn featured" id="dlRegular" onclick="downloadPhoto('regular')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        HD (1080p)
+                    </button>
+                    <button class="download-btn" id="dlFull" onclick="downloadPhoto('full')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Full
+                    </button>
+                </div>
+                <div class="lb-counter" id="lbCounter"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

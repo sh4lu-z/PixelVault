@@ -1,0 +1,9 @@
+node_modules/
+.env
+.DS_Store
+dist/
+build/
+*.log
+migrate.js
+final_photos_db.json
+progress.json
