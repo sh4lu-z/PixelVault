@@ -142,11 +142,28 @@ app.get('/api/search', async (req, res) => {
 });
 
 app.get('/api/categories', async (req, res) => {
-    const cats = await Photo.aggregate([
-        { $group: { _id: "$category", count: { $sum: 1 }, sample: { $push: "$urls.small" } } },
-        { $project: { name: "$_id", count: 1, sample: { $slice: ["$sample", 4] } } }
-    ]);
-    res.json(cats);
+    try {
+        const timeout = setTimeout(() => {
+            if (!res.headersSent) {
+                res.status(504).json({ error: 'Request timeout' });
+            }
+        }, 12000);
+        
+        const cats = await Photo.aggregate([
+            { $group: { _id: "$category", count: { $sum: 1 }, sample: { $push: "$urls.small" } } },
+            { $sort: { count: -1 } },
+            { $limit: 20 },
+            { $project: { name: "$_id", count: 1, sample: { $slice: ["$sample", 4] } } }
+        ]);
+        
+        clearTimeout(timeout);
+        res.json(cats);
+    } catch (err) {
+        console.error('Categories fetch error:', err);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to load categories' });
+        }
+    }
 });
 
 app.get('/api/category/:catName', async (req, res) => {

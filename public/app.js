@@ -42,11 +42,27 @@ async function fetchStats() {
 
 async function fetchCategories() {
     try {
-        const res = await fetch('/api/categories');
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        
+        const res = await fetch('/api/categories', { signal: controller.signal });
+        clearTimeout(timeout);
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+        
         const categories = await res.json();
         renderCategories(categories);
         renderQuickTags(categories);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error('Categories fetch error:', e);
+        if (e.name === 'AbortError') {
+            showToast('Categories took too long to load. Try again.');
+        } else {
+            showToast('Could not load categories.');
+        }
+    }
 }
 
 function renderCategories(categories) {
