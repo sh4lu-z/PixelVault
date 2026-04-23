@@ -59,11 +59,14 @@
             <div class="nav-actions">
                 <button class="nav-btn" id="homeBtn" onclick="showPage('home')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-                    Home
+                    <span>Home</span>
                 </button>
                 <button class="nav-btn" id="exploreBtn" onclick="showPage('explore')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    Explore
+                    <span>Explore</span>
+                </button>
+                <button class="nav-btn icon-only" onclick="openHelp()" title="How to use">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 </button>
             </div>
         </div>
@@ -73,11 +76,10 @@
     <div class="page active" id="page-home">
         <!-- Hero Section -->
         <section class="hero">
+            <div class="note-banner" id="loaderNote">
+                Note: Site might take a moment to load high-quality photos.
+            </div>
             <div class="hero-content">
-                <div class="hero-badge">
-                    <span class="badge-dot"></span>
-                    Live Search — Powered by Unsplash
-                </div>
                 <h1 class="hero-title">
                     Discover <span class="gradient-text">Stunning</span><br/>Wallpapers
                 </h1>
@@ -193,13 +195,13 @@
                     <div class="footer-col">
                         <h4>Social</h4>
                         <a href="https://sh4lu-z.vercel.app/" target="_blank">Portfolio</a>
-                        <a href="https://sh4lu-z.vercel.app/" target="_blank">Instagram</a>
-                        <a href="https://sh4lu-z.vercel.app/" target="_blank">Twitter</a>
+                        <a href="https://www.instagram.com/sh4lu_z1?igsh=MTc0cHZpOTI4cWdvZg==" target="_blank">Instagram</a>
+                        <a href="https://x.com/sh4lu_z" target="_blank">Twitter</a>
                     </div>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 PixelVault. Developed with ❤️ by <a href="https://sh4lu-z.vercel.app/" target="_blank">Shaluka Gimhan</a></p>
+                <p>&copy; 2026 PixelVault. Developed with ❤️ by <a href="https://sh4lu-z.vercel.app/" target="_blank"><span style="white-space: nowrap;">Shaluka Gimhan</span></a></p>
             </div>
         </footer>
     </div>
@@ -207,6 +209,12 @@
     <!-- ======= EXPLORE / RESULTS PAGE ======= -->
     <div class="page" id="page-explore">
         <div class="explore-header">
+            <div class="explore-header-top">
+                <button class="back-btn" onclick="showPage('home')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    Back
+                </button>
+            </div>
             <div class="explore-search">
                 <div class="search-bar mini">
                     <div class="search-icon">
@@ -222,6 +230,13 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="filter-group" id="orientationFilter">
+                <button class="filter-btn active" onclick="setOrientation('all', this)">All</button>
+                <button class="filter-btn" onclick="setOrientation('pc', this)">PC (Landscape)</button>
+                <button class="filter-btn" onclick="setOrientation('mobile', this)">Mobile (Portrait)</button>
+            </div>
+            
             <div class="explore-meta" id="exploreMeta"></div>
         </div>
 
@@ -268,6 +283,7 @@
                     </div>
                 </div>
                 <div class="lb-description" id="lbDesc"></div>
+                <div class="lb-extra-info" id="lbExtra"></div>
                 <div class="lb-tags" id="lbTags"></div>
                 <div class="lb-meta">
                     <span class="lb-meta-item" id="lbSize"></span>
@@ -290,6 +306,53 @@
                     </button>
                 </div>
                 <div class="lb-counter" id="lbCounter"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======= HELP MODAL ======= -->
+    <div class="help-modal-backdrop" id="helpModal" style="display:none;">
+        <div class="help-modal">
+            <button class="help-close" onclick="closeHelp()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <h2 class="help-title">How to use PixelVault</h2>
+            
+            <div class="help-tabs">
+                <button class="help-tab active" onclick="switchHelpTab('sin', this)">සිංහල</button>
+                <button class="help-tab" onclick="switchHelpTab('en', this)">English</button>
+            </div>
+
+            <div class="help-content active" id="help-sin">
+                <p><strong>PixelVault වෙත සාදරයෙන් පිළිගනිමු!</strong></p>
+                <ul>
+                    <li><strong>Live Search (සජීවී සෙවුම්):</strong> ඔබට අවශ්‍ය ඕනෑම දෙයක් Search කරන්න. අපේ ළඟ දැනටමත් නැත්නම් අපි ඒ වෙලාවෙම අලුත් ඒවා ගෙනත් දෙන්නම්!</li>
+                    <li><strong>Filters:</strong> 'PC' හෝ 'Mobile' තෝරලා ඔයාගේ Screen එකටම ගැලපෙන Wallpapers හොයාගන්න පුළුවන්.</li>
+                    <li><strong>Categories:</strong> 'Explore' පිටුවට ගිහින් අපි වෙනම වෙන් කරලා තියෙන ලස්සන Photos බලන්න.</li>
+                    <li><strong>Downloads (බාගත කිරීම්):</strong> කැමති Photo එකක් උඩ ක්ලික් කරලා, ඔයාට ඕන Quality එකෙන් Download කරගන්න:
+                        <ul class="sub-list">
+                            <li><em>Small</em> - ඉක්මනින් Download කරගන්න සහ ඩේටා ඉතුරු කරගන්න.</li>
+                            <li><em>HD (1080p)</em> - සාමාන්‍ය Screen වලට ගැලපෙන හොඳම Quality එක.</li>
+                            <li><em>Full</em> - උපරිම Quality එක සහිත Original ෆොටෝ එක.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="help-content" id="help-en">
+                <p><strong>Welcome to PixelVault!</strong></p>
+                <ul>
+                    <li><strong>Live Search:</strong> Search for anything! If we don't have it locally, we'll fetch it live.</li>
+                    <li><strong>Filters:</strong> Use the 'PC' or 'Mobile' tags to find wallpapers perfectly sized for your screen.</li>
+                    <li><strong>Categories:</strong> Browse curated collections from the 'Explore' tab.</li>
+                    <li><strong>Downloading:</strong> Click on any photo to open it, then choose your preferred quality:
+                        <ul class="sub-list">
+                            <li><em>Small</em> - Best for fast connections and saving data.</li>
+                            <li><em>HD (1080p)</em> - Perfect for standard screens.</li>
+                            <li><em>Full</em> - Highest available quality original photo.</li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>

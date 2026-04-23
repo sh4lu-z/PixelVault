@@ -6,6 +6,8 @@ let isLive = false;
 let isLoading = false;
 let stats = null;
 
+let currentOrientation = 'all';
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     fetchStats();
@@ -30,6 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast(isLive ? 'Live Fetch Enabled' : 'Live Fetch Disabled');
         });
     });
+
+    // Auto-hide note banner
+    const noteBanner = document.getElementById('loaderNote');
+    if (noteBanner) {
+        setTimeout(() => {
+            noteBanner.style.display = 'none';
+        }, 4000); // 4 seconds
+    }
 });
 
 async function fetchStats() {
@@ -82,10 +92,13 @@ function renderCategories(categories) {
 
 function renderQuickTags(categories) {
     const container = document.getElementById('quickTags');
-    const tags = categories.slice(0, 6).map(cat => `
-        <button class="quick-tag" onclick="doSearch('${cat.name}')">${cat.name}</button>
+    const customTags = [
+        'Dark', 'Neon', 'Cars', 'Misty mountains', 'Mountains & nature', 'Majestic waterfalls'
+    ];
+    const tags = customTags.map(tagName => `
+        <button class="quick-tag" onclick="doSearch('${tagName}')">${tagName}</button>
     `).join('');
-    container.innerHTML += tags;
+    container.innerHTML = '<span class="tag-label">Popular:</span>' + tags;
 }
 
 async function loadRandomGrid() {
@@ -93,12 +106,18 @@ async function loadRandomGrid() {
     try {
         const res = await fetch('/api/random?count=12');
         const data = await res.json();
-        grid.innerHTML = data.photos.map(p => `
-            <div class="grid-item">
+        window.heroPhotos = data.photos;
+        grid.innerHTML = data.photos.map((p, idx) => `
+            <div class="grid-item" style="cursor: pointer;" onclick="openHeroLightbox(${idx})">
                 <img src="${p.urls.small}" alt="">
             </div>
         `).join('');
     } catch (e) { console.error(e); }
+}
+
+function openHeroLightbox(index) {
+    currentPhotos = window.heroPhotos;
+    openLightbox(index);
 }
 
 async function doSearch(query) {
@@ -133,7 +152,7 @@ async function performSearch(append = false) {
     }
     
     try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(currentQuery)}&page=${currentPage}&live=${isLive}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(currentQuery)}&page=${currentPage}&live=${isLive}&orientation=${currentOrientation}`);
         const data = await res.json();
         
         if (data.photos.length === 0 && !append) {
@@ -181,7 +200,7 @@ async function loadCategory(catName) {
     document.getElementById('mainSpinner').style.display = 'flex';
     
     try {
-        const res = await fetch(`/api/category/${catName}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(catName)}&page=1&live=false&orientation=${currentOrientation}`);
         const data = await res.json();
         currentPhotos = data.photos;
         renderPhotos(data.photos, false);
@@ -191,13 +210,24 @@ async function loadCategory(catName) {
     finally { document.getElementById('mainSpinner').style.display = 'none'; }
 }
 
+function setOrientation(type, btnElem) {
+    currentOrientation = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    btnElem.classList.add('active');
+    
+    if (currentQuery) {
+        currentPage = 1;
+        performSearch();
+    }
+}
+
 function renderPhotos(photos, append) {
     const grid = document.getElementById('mainGrid');
     const html = photos.map((p, idx) => {
         const actualIdx = append ? currentPhotos.length - photos.length + idx : idx;
         return `
             <div class="gallery-item" onclick="openLightbox(${actualIdx})">
-                <img src="${p.urls.regular}" loading="lazy" alt="${p.description || ''}">
+                <img src="${p.urls.small}" loading="lazy" alt="${p.description || ''}">
                 <div class="item-overlay">
                     <p class="item-desc">${p.description || 'View Photo'}</p>
                     <p class="item-user">by ${p.user.name}</p>
@@ -224,6 +254,20 @@ function showPage(pageId) {
     document.getElementById('exploreBtn').classList.toggle('active', pageId === 'explore');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Help Modal Logic
+function openHelp() {
+    document.getElementById('helpModal').style.display = 'flex';
+}
+function closeHelp() {
+    document.getElementById('helpModal').style.display = 'none';
+}
+function switchHelpTab(lang, btn) {
+    document.querySelectorAll('.help-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.help-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`help-${lang}`).classList.add('active');
 }
 
 // Lightbox Logic
@@ -263,6 +307,13 @@ function openLightbox(index) {
     document.getElementById('lbName').innerText = photo.user.name;
     document.getElementById('lbUsername').innerText = `@${photo.user.username}`;
     document.getElementById('lbDesc').innerText = photo.description || 'No description provided';
+    
+    // Additional Photo & User Metadata from JSON
+    const locationStr = photo.user.location ? `<div class="lb-meta-location">📍 ${photo.user.location}</div>` : '';
+    const bioStr = photo.user.bio ? `<div class="lb-meta-bio">${photo.user.bio}</div>` : '';
+    
+    document.getElementById('lbExtra').innerHTML = locationStr + bioStr;
+
     document.getElementById('lbSize').innerText = `${photo.width} x ${photo.height}`;
     document.getElementById('lbColorDot').style.background = photo.color;
     document.getElementById('lbCounter').innerText = `${index + 1} / ${currentPhotos.length}`;
