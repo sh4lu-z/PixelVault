@@ -39,17 +39,27 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 const UNSPLASH_KEYS = (process.env.UNSPLASH_KEYS || "").split(',');
 let currentKeyIndex = 0;
 
-async function fetchUnsplash(query, page = 1, perPage = 30) {
+async function fetchUnsplash(query, count = 30, orientation = 'all') {
     for (let attempt = 0; attempt < UNSPLASH_KEYS.length; attempt++) {
         try {
-            const res = await axios.get('https://api.unsplash.com/search/photos', {
-                params: { query, page, per_page: perPage },
+            const params = { query, count };
+            if (orientation === 'pc') {
+                params.orientation = 'landscape';
+            } else if (orientation === 'mobile') {
+                params.orientation = 'portrait';
+            }
+            
+            // random endpoint gives completely new photos every time instead of returning statis page 1
+            const res = await axios.get('https://api.unsplash.com/photos/random', {
+                params,
                 headers: { Authorization: `Client-ID ${UNSPLASH_KEYS[currentKeyIndex]}` }
             });
-            return res.data;
+            return res.data; // this returns an array of random photos
         } catch (err) {
             if (err.response && (err.response.status === 403 || err.response.status === 429)) {
                 currentKeyIndex = (currentKeyIndex + 1) % UNSPLASH_KEYS.length;
+            } else if (err.response && err.response.status === 404) {
+                return []; // No public photos mathing this query
             } else {
                 throw err;
             }
@@ -80,18 +90,30 @@ app.get('/api/search', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
     const fetchLive = req.query.live === 'true';
+    const orientation = req.query.orientation || 'all';
 
     if (!query) return res.json({ photos: [], total: 0 });
 
-    // 1. Search in MongoDB
+    // 1. Search in MongoDB (get 100 randomly sampled local photos so it's always fresh)
     const regex = new RegExp(query, 'i');
-    let localPhotos = await Photo.find({
+    let matchQuery = {
         $or: [
             { category: regex },
             { description: regex },
             { tags: regex }
         ]
-    }).limit(100); // Take a good chunk to deduplicate
+    };
+    
+    if (orientation === 'pc') {
+        matchQuery.$expr = { $gt: ["$width", "$height"] };
+    } else if (orientation === 'mobile') {
+        matchQuery.$expr = { $gt: ["$height", "$width"] };
+    }
+
+    let localPhotos = await Photo.aggregate([
+        { $match: matchQuery },
+        { $sample: { size: 100 } }
+    ]);
 
     // 2. Fetch Live if needed
     let livePhotos = [];
@@ -99,9 +121,11 @@ app.get('/api/search', async (req, res) => {
 
     if (fetchLive || localPhotos.length === 0) {
         try {
-            const apiData = await fetchUnsplash(query, page, 30);
-            if (apiData && apiData.results) {
-                livePhotos = apiData.results.map(p => mapPhoto(p, query));
+            const apiData = await fetchUnsplash(query, 30, orientation);
+            const resultsArray = Array.isArray(apiData) ? apiData : (apiData && apiData.results ? apiData.results : []);
+            
+            if (resultsArray.length > 0) {
+                livePhotos = resultsArray.map(p => mapPhoto(p, query));
                 
                 // Save to MongoDB asynchronously
                 for (const p of livePhotos) {
@@ -150,6 +174,7 @@ app.get('/api/categories', async (req, res) => {
         }, 12000);
         
         const cats = await Photo.aggregate([
+            { $match: { category: { $ne: null } } },
             { $group: { _id: "$category", count: { $sum: 1 }, sample: { $push: "$urls.small" } } },
             { $sort: { count: -1 } },
             { $limit: 20 },
@@ -172,8 +197,9 @@ app.get('/api/category/:catName', async (req, res) => {
     const limit = 30;
 
     try {
-        const total = await Photo.countDocuments({ category: new RegExp(catName, 'i') });
-        const photos = await Photo.find({ category: new RegExp(catName, 'i') })
+        const queryParams = { category: new RegExp(catName, 'i') };
+        const total = await Photo.countDocuments(queryParams);
+        const photos = await Photo.find(queryParams)
             .skip((page - 1) * limit)
             .limit(limit);
         
@@ -191,12 +217,17 @@ app.get('/api/category/:catName', async (req, res) => {
 
 app.get('/api/stats', async (req, res) => {
     const totalPhotos = await Photo.countDocuments();
-    const totalCategories = (await Photo.distinct('category')).length;
+    const totalCategories = (await Photo.aggregate([
+        { $match: { category: { $ne: null } } },
+        { $group: { _id: "$category" } }
+    ])).length;
     res.json({ totalPhotos, totalCategories });
 });
 
 app.get('/api/random', async (req, res) => {
-    const photos = await Photo.aggregate([{ $sample: { size: 12 } }]);
+    const photos = await Photo.aggregate([
+        { $sample: { size: 12 } }
+    ]);
     res.json({ photos });
 });
 
