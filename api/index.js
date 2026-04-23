@@ -149,6 +149,29 @@ app.get('/api/categories', async (req, res) => {
     res.json(cats);
 });
 
+app.get('/api/category/:catName', async (req, res) => {
+    const catName = req.params.catName;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 30;
+
+    try {
+        const total = await Photo.countDocuments({ category: new RegExp(catName, 'i') });
+        const photos = await Photo.find({ category: new RegExp(catName, 'i') })
+            .skip((page - 1) * limit)
+            .limit(limit);
+        
+        res.json({
+            photos,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (err) {
+        console.error('Category fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch category' });
+    }
+});
+
 app.get('/api/stats', async (req, res) => {
     const totalPhotos = await Photo.countDocuments();
     const totalCategories = (await Photo.distinct('category')).length;
