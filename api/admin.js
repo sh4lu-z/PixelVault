@@ -2,20 +2,20 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 
-module.exports = function(Photo, fetchUnsplash, mapPhoto) {
-    
+module.exports = function (Photo, fetchUnsplash, mapPhoto) {
+
     // --- ADMIN AUTH CONFIG ---
     const adminEnvPass = process.env.ADMIN || 'admin123';
     // The target hash for the correct admin password
     const expectedHash = crypto.createHash('sha256').update(adminEnvPass).digest('hex');
-    
+
     router.post('/login', (req, res) => {
         const { password } = req.body;
         if (!password) return res.status(400).json({ error: 'Password required' });
-        
+
         // Hash the incoming password to compare
         const userHash = crypto.createHash('sha256').update(password).digest('hex');
-        
+
         if (userHash === expectedHash) {
             res.json({ success: true, token: expectedHash });
         } else {
@@ -37,7 +37,7 @@ module.exports = function(Photo, fetchUnsplash, mapPhoto) {
         try {
             const categories = await Photo.distinct('category');
             res.json(categories.filter(Boolean));
-        } catch(e) { res.status(500).json({ error: e.message }); }
+        } catch (e) { res.status(500).json({ error: e.message }); }
     });
 
     // Get all photos, optionally filtered by verification status
@@ -50,8 +50,23 @@ module.exports = function(Photo, fetchUnsplash, mapPhoto) {
 
             const categoryFilter = req.query.category;
             if (categoryFilter) {
-                query.category = new RegExp(categoryFilter, 'i');
+                const searchWords = categoryFilter.trim().split(/\s+/).filter(w => w.length > 1);
+                const flexibleRegexStr = searchWords.length > 0 ? searchWords.join('|') : categoryFilter;
+                const adultRegex = /sexy|xxx|nude|porn|sex/i;
+                const queryIsAdult = adultRegex.test(categoryFilter);
+
+                if (!queryIsAdult) {
+                    // Safe search: match query words BUT must NOT contain adult words
+                    query.category = { $regex: flexibleRegexStr, $options: 'i', $not: adultRegex };
+                } else {
+                    // Adult search: direct regex
+                    query.category = new RegExp(flexibleRegexStr, 'i');
+                }
             }
+
+
+
+
 
             const limit = parseInt(req.query.limit) || 100;
             const page = parseInt(req.query.page) || 1;
@@ -60,7 +75,7 @@ module.exports = function(Photo, fetchUnsplash, mapPhoto) {
                 .sort({ createdAt: -1 })
                 .skip((page - 1) * limit)
                 .limit(limit);
-                
+
             const total = await Photo.countDocuments(query);
             res.json({ photos, total, page, limit });
         } catch (error) {
@@ -102,18 +117,20 @@ module.exports = function(Photo, fetchUnsplash, mapPhoto) {
     router.put('/photos/bulk-category', async (req, res) => {
         const { ids, category } = req.body;
         try {
-            await Photo.updateMany({ id: { $in: ids } }, { category: category });
+            await Photo.updateMany({ id: { $in: ids } }, { category: category ? category.toLowerCase() : category });
             res.json({ success: true });
-        } catch(e) { res.status(500).json({ error: e.message }); }
+
+        } catch (e) { res.status(500).json({ error: e.message }); }
     });
 
     // NEW: Single photo category update
     router.put('/photo/:id/category', async (req, res) => {
         const { category } = req.body;
         try {
-            await Photo.findOneAndUpdate({ id: req.params.id }, { category: category });
+            await Photo.findOneAndUpdate({ id: req.params.id }, { category: category ? category.toLowerCase() : category });
             res.json({ success: true });
-        } catch(e) { res.status(500).json({ error: e.message }); }
+
+        } catch (e) { res.status(500).json({ error: e.message }); }
     });
 
     // NEW: Bulk Verify
@@ -122,7 +139,7 @@ module.exports = function(Photo, fetchUnsplash, mapPhoto) {
         try {
             await Photo.updateMany({ id: { $in: ids } }, { verified: true });
             res.json({ success: true });
-        } catch(e) { res.status(500).json({ error: e.message }); }
+        } catch (e) { res.status(500).json({ error: e.message }); }
     });
 
     // NEW: Bulk Delete
@@ -131,7 +148,7 @@ module.exports = function(Photo, fetchUnsplash, mapPhoto) {
         try {
             await Photo.deleteMany({ id: { $in: ids } });
             res.json({ success: true });
-        } catch(e) { res.status(500).json({ error: e.message }); }
+        } catch (e) { res.status(500).json({ error: e.message }); }
     });
 
     // Manual fetch from Unsplash (add to db as unverified)
@@ -165,6 +182,7 @@ module.exports = function(Photo, fetchUnsplash, mapPhoto) {
             const pendingAuth = await Photo.countDocuments({ verified: false });
             res.json({ verified: verifiedActive, pending: pendingAuth });
         } catch (error) {
+
             res.status(500).json({ error: error.message });
         }
     });

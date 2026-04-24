@@ -592,7 +592,7 @@ body {
     background: #0060d3;
 }
 
-/* Toast */
+/* Toast Message Styling */
 .toast {
     position: fixed;
     bottom: 2rem;
@@ -600,12 +600,44 @@ body {
     transform: translateX(-50%) translateY(100px);
     background: #00ff88;
     color: black;
-    padding: 1rem 2rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 100px;
     font-weight: 700;
     z-index: 3000;
-    transition: var(--transition);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    white-space: nowrap;
 }
+
+.toast.active {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.toast-btn {
+    background: black;
+    color: #00ff88;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.toast-btn:hover {
+    transform: scale(1.05);
+    background: #222;
+}
+
+
 
 /* Categories Section */
 .categories-section {
@@ -1330,3 +1362,13 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px var(--accent-glow);
 }
+
+/* Animations */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
