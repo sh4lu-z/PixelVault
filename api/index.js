@@ -26,6 +26,7 @@ const PhotoSchema = new mongoose.Schema({
     exif: Object,
     tags: [String],
     category: String,
+    verified: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -84,6 +85,8 @@ function mapPhoto(photo, category) {
 }
 
 // ===== API ROUTES =====
+const adminRoutes = require('./admin')(Photo, fetchUnsplash, mapPhoto);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/search', async (req, res) => {
     const query = (req.query.q || '').toLowerCase().trim();
@@ -94,32 +97,34 @@ app.get('/api/search', async (req, res) => {
 
     if (!query) return res.json({ photos: [], total: 0 });
 
-    // 1. Search in MongoDB (get 100 randomly sampled local photos so it's always fresh)
-    const regex = new RegExp(query, 'i');
-    let matchQuery = {
-        $or: [
-            { category: regex },
-            { description: regex },
-            { tags: regex }
-        ]
-    };
-    
-    if (orientation === 'pc') {
-        matchQuery.$expr = { $gt: ["$width", "$height"] };
-    } else if (orientation === 'mobile') {
-        matchQuery.$expr = { $gt: ["$height", "$width"] };
-    }
-
-    let localPhotos = await Photo.aggregate([
-        { $match: matchQuery },
-        { $sample: { size: 100 } }
-    ]);
-
-    // 2. Fetch Live if needed
+    let localPhotos = [];
     let livePhotos = [];
     let newPhotosAdded = 0;
 
-    if (fetchLive || localPhotos.length === 0) {
+    if (!fetchLive) {
+        // 1. Search in MongoDB (Live is OFF)
+        const regex = new RegExp(query, 'i');
+        let matchQuery = {
+            verified: true, // Only show verified photos
+            $or: [
+                { category: regex },
+                { description: regex },
+                { tags: regex }
+            ]
+        };
+        
+        if (orientation === 'pc') {
+            matchQuery.$expr = { $gt: ["$width", "$height"] };
+        } else if (orientation === 'mobile') {
+            matchQuery.$expr = { $gt: ["$height", "$width"] };
+        }
+
+        localPhotos = await Photo.aggregate([
+            { $match: matchQuery },
+            { $sample: { size: 100 } }
+        ]);
+    } else {
+        // 2. Fetch Live from API (Live is ON)
         try {
             const apiData = await fetchUnsplash(query, 30, orientation);
             const resultsArray = Array.isArray(apiData) ? apiData : (apiData && apiData.results ? apiData.results : []);
@@ -132,7 +137,9 @@ app.get('/api/search', async (req, res) => {
                     try {
                         const exists = await Photo.findOne({ id: p.id });
                         if (!exists) {
-                            await Photo.create(p);
+                            // Assign verified: false before saving
+                            const newPhotoDoc = { ...p, verified: false };
+                            await Photo.create(newPhotoDoc);
                             newPhotosAdded++;
                         }
                     } catch (e) {}
@@ -144,7 +151,7 @@ app.get('/api/search', async (req, res) => {
     }
 
     // Combine and Deduplicate
-    const all = [...localPhotos, ...livePhotos];
+    const all = fetchLive ? livePhotos : localPhotos;
     const seen = new Set();
     const unique = all.filter(p => {
         if (seen.has(p.id)) return false;
@@ -174,10 +181,10 @@ app.get('/api/categories', async (req, res) => {
         }, 12000);
         
         const cats = await Photo.aggregate([
-            { $match: { category: { $ne: null } } },
+            { $match: { category: { $ne: null }, verified: true } },
             { $group: { _id: "$category", count: { $sum: 1 }, sample: { $push: "$urls.small" } } },
             { $sort: { count: -1 } },
-            { $limit: 20 },
+            { $limit: 100 },
             { $project: { name: "$_id", count: 1, sample: { $slice: ["$sample", 4] } } }
         ]);
         
@@ -197,7 +204,7 @@ app.get('/api/category/:catName', async (req, res) => {
     const limit = 30;
 
     try {
-        const queryParams = { category: new RegExp(catName, 'i') };
+        const queryParams = { category: new RegExp(catName, 'i'), verified: true };
         const total = await Photo.countDocuments(queryParams);
         const photos = await Photo.find(queryParams)
             .skip((page - 1) * limit)
@@ -226,6 +233,7 @@ app.get('/api/stats', async (req, res) => {
 
 app.get('/api/random', async (req, res) => {
     const photos = await Photo.aggregate([
+        { $match: { verified: true } },
         { $sample: { size: 12 } }
     ]);
     res.json({ photos });

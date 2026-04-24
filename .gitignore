@@ -4,6 +4,4 @@ node_modules/
 dist/
 build/
 *.log
-migrate.js
-final_photos_db.json
-progress.json
+
