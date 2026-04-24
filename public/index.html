@@ -102,7 +102,7 @@
                         <div class="search-actions">
                             <button class="live-toggle" id="liveToggle" title="Fetch live from Unsplash">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                Live
+                                <span class="live-toggle-text">Live</span>
                             </button>
                             <button class="search-btn" id="heroSearchBtn" onclick="doSearch()">
                                 Search
@@ -112,9 +112,13 @@
                     <div class="search-suggestions" id="searchSuggestions"></div>
                 </div>
 
-                <div class="quick-tags" id="quickTags">
-                    <span class="tag-label">Popular:</span>
-                    <!-- filled by JS -->
+                <!-- Category Ticker / Marquee Strip -->
+                <div class="category-ticker-wrap">
+                    <div class="category-ticker" id="categoryTicker">
+                        <div class="ticker-track" id="tickerTrack">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -225,7 +229,7 @@
                     <div class="search-actions">
                         <button class="live-toggle" id="exploreLiveToggle" title="Fetch live">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            Live
+                            <span class="live-toggle-text">Live</span>
                         </button>
                         <button class="search-btn" onclick="doExploreSearch()">Go</button>
                     </div>
@@ -307,6 +311,20 @@
                     </button>
                 </div>
                 <div class="lb-counter" id="lbCounter"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======= AGE VERIFICATION MODAL ======= -->
+    <div class="help-modal-backdrop" id="ageModal" style="display:none; z-index: 9999;">
+        <div class="help-modal">
+            <h2 class="help-title" style="color: #ef4444; border-bottom: none; text-align: center; padding-bottom: 0;">Age Verification</h2>
+            <div class="help-content active" style="text-align: center; padding-top: 1rem;">
+                <p style="margin-bottom: 2rem; font-size: 1.1rem; color: var(--text-primary);">This content may contain adult material. Are you over 18 years old?</p>
+                <div style="display: flex; gap: 1rem; justify-content: center; max-width: 400px; margin: 0 auto;">
+                    <button class="download-btn featured" onclick="confirmAge(true)" style="background: #ef4444; flex: 1;">Yes, I am 18+</button>
+                    <button class="download-btn" onclick="confirmAge(false)" style="flex: 1;">No</button>
+                </div>
             </div>
         </div>
     </div>

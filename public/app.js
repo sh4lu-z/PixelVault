@@ -20,6 +20,8 @@ let isLoading = false;
 let stats = null;
 
 let currentOrientation = 'all';
+let isAgeVerified = false;
+let pendingAdultQuery = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -78,6 +80,7 @@ async function fetchCategories() {
         const categories = await res.json();
         renderCategories(categories);
         renderQuickTags(categories);
+        renderCategoryTicker(categories);
     } catch (e) {
         console.error('Categories fetch error:', e);
         if (e.name === 'AbortError') {
@@ -90,28 +93,169 @@ async function fetchCategories() {
 
 function renderCategories(categories) {
     const grid = document.getElementById('categoriesGrid');
-    grid.innerHTML = categories.map(cat => `
-        <div class="category-card" onclick="loadCategory('${cat.name}')">
-            <div class="cat-images">
+    grid.innerHTML = categories.map(cat => {
+        const isAdult = cat.name.toLowerCase() === 'sexy girls';
+        const blurStyle = isAdult && !isAgeVerified ? 'filter: blur(15px);' : '';
+        const blurOverlay = isAdult && !isAgeVerified ? '<div class="adult-overlay" style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); border-radius:12px; z-index:1;"><span style="color:#ef4444; font-weight:bold; font-size:1.2rem;">18+</span></div>' : '';
+        
+        return `
+        <div class="category-card" onclick="loadCategory('${cat.name.replace(/'/g,"\\'")}')" style="position:relative;">
+            <div class="cat-images" style="${blurStyle}">
                 ${cat.sample.map(img => `<img src="${img}" alt="">`).join('')}
             </div>
-            <div class="cat-info">
+            ${blurOverlay}
+            <div class="cat-info" style="position:relative; z-index:2;">
                 <h3>${cat.name}</h3>
                 <p>${cat.count} Photos</p>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 function renderQuickTags(categories) {
-    const container = document.getElementById('quickTags');
-    const customTags = [
-        'Dark', 'Neon', 'Cars', 'Misty mountains', 'Mountains & nature', 'Majestic waterfalls'
-    ];
-    const tags = customTags.map(tagName => `
-        <button class="quick-tag" onclick="doSearch('${tagName}')">${tagName}</button>
-    `).join('');
-    container.innerHTML = '<span class="tag-label">Popular:</span>' + tags;
+    // Kept for compatibility — no-op, ticker handles it now
+}
+
+function renderCategoryTicker(categories) {
+    const track = document.getElementById('tickerTrack');
+    const ticker = document.getElementById('categoryTicker');
+    if (!track || !categories.length) return;
+
+    // Filter out sexy girls from the ticker
+    const safeCategories = categories.filter(cat => cat.name.toLowerCase() !== 'sexy girls');
+
+    const itemsHTML = safeCategories.map(cat =>
+        `<button class="ticker-tag" onclick="doSearch('${cat.name.replace(/'/g,"\\'")}')"> ${cat.name}</button>`
+    ).join('');
+
+    // Triple to ensure there's enough content to scroll endlessly seamlessly
+    track.innerHTML = itemsHTML + itemsHTML + itemsHTML;
+
+    // Reset styles
+    track.style.animation = 'none';
+
+    let rAF;
+    let isUserEngaged = false;
+    let resumeTimer = null;
+    let isDragging = false;
+    let hasDragged = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    function getSetWidth() {
+        if (!track.children.length) return 1;
+        // The width of one complete set of original items is the offset of the element starting the next set
+        const n = categories.length;
+        if (track.children.length > n && track.children[n]) {
+            return track.children[n].offsetLeft - track.children[0].offsetLeft;
+        }
+        return 1; // fallback
+    }
+
+    function loop() {
+        if (!isUserEngaged) {
+            ticker.scrollLeft += 0.5; // smoother slow speed 
+        }
+
+        const setWidth = getSetWidth();
+        if (setWidth > 1) {
+            // Jump smoothly when scrolled past one set
+            if (ticker.scrollLeft >= setWidth * 2) {
+                ticker.scrollLeft -= setWidth;
+            } else if (ticker.scrollLeft <= 0) {
+                ticker.scrollLeft += setWidth;
+            }
+        }
+        rAF = requestAnimationFrame(loop);
+    }
+
+    if (window._tickerRaf) cancelAnimationFrame(window._tickerRaf);
+    window._tickerRaf = requestAnimationFrame(loop);
+
+    function resetResumeTimer() {
+        clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(() => { isUserEngaged = false; }, 2500);
+    }
+
+    // Desktop Drag handling
+    ticker.addEventListener('mousedown', (e) => {
+        isUserEngaged = true;
+        isDragging = true;
+        hasDragged = false;
+        startX = e.pageX - ticker.getBoundingClientRect().left;
+        scrollLeft = ticker.scrollLeft;
+        clearTimeout(resumeTimer);
+        ticker.style.cursor = 'grabbing';
+        ticker.style.userSelect = 'none';
+        
+        // Prevent default on mousedown to prevent text/image selection dragging
+        e.preventDefault(); 
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - ticker.getBoundingClientRect().left;
+        const delta = x - startX;
+        if (Math.abs(delta) > 4) hasDragged = true;
+        
+        // Manual move
+        ticker.scrollLeft = scrollLeft - delta;
+
+        // Boundaries while drag
+        const setWidth = getSetWidth();
+        if (ticker.scrollLeft >= setWidth * 2) {
+             ticker.scrollLeft -= setWidth;
+             startX -= setWidth;
+             scrollLeft -= setWidth;
+        } else if (ticker.scrollLeft <= 0) {
+             ticker.scrollLeft += setWidth;
+             startX += setWidth;
+             scrollLeft += setWidth;
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        ticker.style.cursor = 'grab';
+        ticker.style.userSelect = '';
+        resetResumeTimer();
+    });
+
+    // Stop child click when dragging
+    ticker.addEventListener('click', (e) => {
+        if (hasDragged) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            hasDragged = false;
+        }
+    }, true);
+
+    // Mobile / Touch handling (using native scroll + JS checking)
+    ticker.addEventListener('touchstart', () => {
+        isUserEngaged = true;
+        clearTimeout(resumeTimer);
+    }, { passive: true });
+
+    // Ensure infinite bounds check natively on mobile swipe bounds
+    ticker.addEventListener('scroll', () => {
+        if (isUserEngaged) {
+           const setWidth = getSetWidth();
+           if (setWidth > 1) {
+               if (ticker.scrollLeft >= setWidth * 2) {
+                    ticker.scrollLeft -= setWidth;
+               } else if (ticker.scrollLeft <= 0) {
+                    ticker.scrollLeft += setWidth;
+               }
+           }
+           resetResumeTimer();
+        }
+    }, { passive: true });
+
+    ticker.addEventListener('touchend', () => {
+        resetResumeTimer();
+    });
 }
 
 async function loadRandomGrid() {
@@ -133,9 +277,48 @@ function openHeroLightbox(index) {
     openLightbox(index);
 }
 
+// =================== AGE VERIFICATION ===================
+const adultPattern = /\b(sex|xxx|sexy|nude|porn)\b/i;
+
+function checkAdultSearch(query, callback) {
+    if (adultPattern.test(query) && !isAgeVerified) {
+        pendingAdultQuery = callback;
+        document.getElementById('ageModal').style.display = 'flex';
+        return true; // Indicates adult check is pending
+    }
+    return false; // Safe or already verified
+}
+
+window.confirmAge = function(isOver18) {
+    document.getElementById('ageModal').style.display = 'none';
+    if (isOver18) {
+        isAgeVerified = true;
+        // Unblur elements in UI
+        document.querySelectorAll('.cat-images').forEach(el => {
+            el.style.filter = '';
+        });
+        document.querySelectorAll('.adult-overlay').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        if (pendingAdultQuery) {
+            const cb = pendingAdultQuery;
+            pendingAdultQuery = null;
+            cb();
+        }
+    } else {
+        pendingAdultQuery = null;
+        document.getElementById('heroSearch').value = '';
+        document.getElementById('exploreSearch').value = '';
+        showPage('home');
+    }
+};
+
 async function doSearch(query) {
     const q = query || document.getElementById('heroSearch').value;
     if (!q) return;
+    
+    if (checkAdultSearch(q, () => doSearch(q))) return;
     
     currentQuery = q;
     currentPage = 1;
@@ -147,6 +330,9 @@ async function doSearch(query) {
 async function doExploreSearch() {
     const q = document.getElementById('exploreSearch').value;
     if (!q) return;
+    
+    if (checkAdultSearch(q, () => doExploreSearch())) return;
+    
     currentQuery = q;
     currentPage = 1;
     performSearch();
@@ -203,6 +389,8 @@ async function performSearch(append = false) {
 }
 
 async function loadCategory(catName) {
+    if (checkAdultSearch(catName, () => loadCategory(catName))) return;
+
     currentQuery = catName;
     currentPage = 1;
     showPage('explore');
