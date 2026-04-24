@@ -537,7 +537,7 @@ function navigateLightbox(dir) {
     openLightbox(currentIndex);
 }
 
-async function downloadPhoto(quality) {
+async function downloadPhoto(quality, btnElement) {
     const photo = currentPhotos[currentIndex];
     const url = photo.urls[quality];
     
@@ -545,10 +545,18 @@ async function downloadPhoto(quality) {
     const category = photo._category || 'Gallery';
     const filename = `PixelVault_${category}_${photo.id}_${quality}.jpg`;
     
+    const originalHTML = btnElement ? btnElement.innerHTML : '';
+    
     showToast('Downloading...');
+    
+    if (btnElement) {
+        btnElement.innerHTML = `<svg class="animate-spin" style="width:18px; height:18px; animation: spin 1s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56" /></svg> Downloading...`;
+        btnElement.disabled = true;
+    }
     
     try {
         const response = await fetch(url);
+        if (!response.ok) throw new Error('Download failed');
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -558,17 +566,53 @@ async function downloadPhoto(quality) {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(blobUrl);
+        
+        showToast('Download Complete!');
     } catch (e) {
+        console.error(e);
+        showToast('Download Failed!');
         window.open(url, '_blank');
+    } finally {
+        if (btnElement) {
+            btnElement.innerHTML = originalHTML;
+            btnElement.disabled = false;
+        }
     }
 }
 
-function showToast(msg) {
+
+
+
+function showToast(msg, actionLabel = null, actionCallback = null) {
     const toast = document.getElementById('toast');
-    toast.innerText = msg;
+    
+    let html = `<span>${msg}</span>`;
+    if (actionLabel && actionCallback) {
+        html += `<button class="toast-btn" id="toastAction">${actionLabel}</button>`;
+    }
+    
+    toast.innerHTML = html;
+    
+    if (actionLabel && actionCallback) {
+        document.getElementById('toastAction').onclick = (e) => {
+            e.stopPropagation();
+            actionCallback();
+            toast.classList.remove('active');
+        };
+    }
+    
     toast.classList.add('active');
-    setTimeout(() => toast.classList.remove('active'), 3000);
+    
+    // Clear any existing timeout
+    if (window._toastTimeout) clearTimeout(window._toastTimeout);
+    
+    // Set auto-hide timeout (longer if there's an action)
+    const duration = actionLabel ? 6000 : 3000;
+    window._toastTimeout = setTimeout(() => {
+        toast.classList.remove('active');
+    }, duration);
 }
+
 
 
 

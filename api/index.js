@@ -5,6 +5,7 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 const path = require('path');
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -36,6 +37,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+
 // ===== Config =====
 const UNSPLASH_KEYS = (process.env.UNSPLASH_KEYS || "").split(',');
 let currentKeyIndex = 0;
@@ -49,7 +51,7 @@ async function fetchUnsplash(query, count = 30, orientation = 'all') {
             } else if (orientation === 'mobile') {
                 params.orientation = 'portrait';
             }
-            
+
             // random endpoint gives completely new photos every time instead of returning statis page 1
             const res = await axios.get('https://api.unsplash.com/photos/random', {
                 params,
@@ -80,9 +82,10 @@ function mapPhoto(photo, category) {
         height: photo.height,
         exif: photo.exif,
         tags: photo.tags ? photo.tags.map(t => t.title) : [],
-        category: category
+        category: category ? category.toLowerCase() : null
     };
 }
+
 
 // ===== API ROUTES =====
 const adminRoutes = require('./admin')(Photo, fetchUnsplash, mapPhoto);
@@ -103,16 +106,30 @@ app.get('/api/search', async (req, res) => {
 
     if (!fetchLive) {
         // 1. Search in MongoDB (Live is OFF)
-        const regex = new RegExp(query, 'i');
+        const adultRegex = /sexy|xxx|nude|porn|sex/i;
+        const queryIsAdult = adultRegex.test(query);
+
+        // Create a regex that matches any word from the query for broader matching (e.g., "Racing Cars" matches "cars")
+        const searchWords = query.trim().split(/\s+/).filter(w => w.length > 1);
+        const flexibleRegex = new RegExp(searchWords.join('|'), 'i');
+
         let matchQuery = {
             verified: true, // Only show verified photos
             $or: [
-                { category: regex },
-                { description: regex },
-                { tags: regex }
+                { category: flexibleRegex },
+                { description: new RegExp(query, 'i') },
+                { tags: new RegExp(query, 'i') }
             ]
         };
-        
+
+
+        // Safety: If the search query itself isn't "adult", exclude adult categories 
+        // to prevent substring matches (e.g., "girl" matching "sexy girls")
+        if (!queryIsAdult) {
+            matchQuery.category = { $not: adultRegex };
+        }
+
+
         if (orientation === 'pc') {
             matchQuery.$expr = { $gt: ["$width", "$height"] };
         } else if (orientation === 'mobile') {
@@ -128,10 +145,10 @@ app.get('/api/search', async (req, res) => {
         try {
             const apiData = await fetchUnsplash(query, 30, orientation);
             const resultsArray = Array.isArray(apiData) ? apiData : (apiData && apiData.results ? apiData.results : []);
-            
+
             if (resultsArray.length > 0) {
                 livePhotos = resultsArray.map(p => mapPhoto(p, query));
-                
+
                 // Save to MongoDB asynchronously
                 for (const p of livePhotos) {
                     try {
@@ -142,7 +159,7 @@ app.get('/api/search', async (req, res) => {
                             await Photo.create(newPhotoDoc);
                             newPhotosAdded++;
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             }
         } catch (err) {
@@ -179,7 +196,7 @@ app.get('/api/categories', async (req, res) => {
                 res.status(504).json({ error: 'Request timeout' });
             }
         }, 12000);
-        
+
         const cats = await Photo.aggregate([
             { $match: { category: { $ne: null }, verified: true } },
             { $group: { _id: "$category", count: { $sum: 1 }, sample: { $push: "$urls.small" } } },
@@ -187,7 +204,7 @@ app.get('/api/categories', async (req, res) => {
             { $limit: 100 },
             { $project: { name: "$_id", count: 1, sample: { $slice: ["$sample", 4] } } }
         ]);
-        
+
         clearTimeout(timeout);
         res.json(cats);
     } catch (err) {
@@ -204,12 +221,29 @@ app.get('/api/category/:catName', async (req, res) => {
     const limit = 30;
 
     try {
-        const queryParams = { category: new RegExp(catName, 'i'), verified: true };
+        const adultRegex = /sexy|xxx|nude|porn|sex/i;
+        const queryIsAdult = adultRegex.test(catName);
+
+        let queryParams = { verified: true };
+        
+        // Use a flexible match for categories (e.g., clicking "car" can match "cars")
+        const flexibleRegex = new RegExp(catName, 'i');
+
+        if (!queryIsAdult) {
+            // Safe category: match the name but exclude adult categories
+            queryParams.category = { $regex: catName, $options: 'i', $not: adultRegex };
+        } else {
+            // Adult category: direct regex match
+            queryParams.category = flexibleRegex;
+        }
+
+
         const total = await Photo.countDocuments(queryParams);
         const photos = await Photo.find(queryParams)
             .skip((page - 1) * limit)
             .limit(limit);
-        
+
+
         res.json({
             photos,
             total,
@@ -238,6 +272,8 @@ app.get('/api/random', async (req, res) => {
     ]);
     res.json({ photos });
 });
+
+
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);

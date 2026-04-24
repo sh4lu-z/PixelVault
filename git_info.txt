@@ -1,0 +1,14 @@
+# Git Information for Today's Updates (April 24, 2026)
+
+## Proposed Branch Name
+`feat/smart-search-local-download`
+
+## Proposed Commit Message
+`feat: implement smart adult filtering, local download system and category normalization`
+
+## Summary of Changes to Commit:
+1.  **Smart Filtering:** Added regex protection to prevent adult categories from appearing in safe searches.
+2.  **Flexible Search:** Enhanced search to allow multi-word queries to match single-word categories (e.g., "Racing Cars" -> "cars").
+3.  **Local Download:** Implemented local file saving and automatic opening using Windows Shell.
+4.  **Data Normalization:** Normalized all 3,000+ photo categories to lowercase.
+5.  **Documentation:** Added `README.md` and `updates_log.md` with full project history.
